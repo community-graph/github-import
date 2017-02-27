@@ -1,0 +1,122 @@
+== Neo4j GitHub Import for Community Graph (and other uses)
+
+Currently uses Python and iPython Notebook, the GitHub GraphQL API via requests.
+
+Run the script and notebook server with these environment variables:
+
+.nb.sh
+----
+cat ../nb.sh 
+export NEO4J_URL=bolt://localhost
+export NEO4J_USER=neo4j
+export NEO4J_PASSWORD=****
+export GITHUB_TOKEN=****
+
+ipython notebook 
+----
+
+=== Approach
+
+* Use GitHub GraphQL API with pre-authorized URL to retrieve non-fork repositories that have neo4j in their name or description (or perhaps readme?)
+* Use idempotent Cypher statement to merge Repositories, Users, Issues, Pull Requests, Tags, Languages
+* page over the data until all is imported
+
+----
+https://platform.github.community/t/access-graphql-api-via-python-client/746/2
+curl -H "Authorization: token $GITHUB_TOKEN" -X POST https://api.github.com/graphql -d '{"query": "query { viewer { login } }"}'
+GITHUB_TOKEN  is a valid OAuth token https://developer.github.com/v3/oauth/
+https://developer.github.com/v3/oauth_authorizations/#create-a-new-authorization
+https://github.com/settings/tokens
+https://platform.github.community/t/how-to-get-any-useful-out-of-a-search/285
+https://platform.github.community/t/add-your-schema-requests/25/50
+https://platform.github.community/t/get-repository-languages/570
+https://facebook.github.io/relay/docs/graphql-connections.html
+
+query { 
+  repository(owner:"neo4j",name:"neo4j") { 
+    id, name,
+    owner {
+      id, login
+    }
+  }
+}
+query { 
+  search(query:"neo4j",type:REPOSITORY) { 
+		repositoryCount
+  }
+}
+
+https://developer.github.com/early-access/graphql/explorer/
+
+query { 
+  search(query:"neo4j created:>2016-01-01",type:REPOSITORY,first:10) { 
+    nodes {      
+      ... on Repository {
+				id,
+        name,
+        description
+        createdAt,
+        updatedAt,
+        stargazers {totalCount},
+        watchers {totalCount},        
+        pullRequests{totalCount},
+        license,
+        releases{totalCount},
+        url,
+        languages(first:100) {edges {node{name}}}
+#        labels(first:100) {edges {node{name}}}
+        mentionableUsers(first:100) {edges {node{name,login,company}}}
+#        languages{nodes{name}},
+#        labels(first:100){nodes{name}},
+#        mentionableUsers(first:100){nodes{name,login,company}},
+        primaryLanguage{name},
+        homepageURL,
+        issues {totalCount},
+        owner {id,login}
+      }
+    }
+  }
+}
+-----
+
+=== Data Model
+
+Uses the GitHub part of this data model:
+
+image::https://github.com/community-graph/documentation/raw/master/community_graph.png[]
+
+
+=== Queries
+
+Latest 100 repositories by stars.
+
+----
+MATCH (n:Repository) WITH n ORDER BY n.created desc LIMIT 100 
+RETURN n.title, n.url, n.created, n.favorites, n.description 
+ORDER BY n.favorites DESC
+----
+=== TODO
+
+* store responses in json files and then import those
+
+=== References
+
+* advanced search: https://github.com/search/advanced?q=x&type=Repositories&utf8=%E2%9C%93
+* https://githubengineering.com/the-github-graphql-api/
+* https://developer.github.com/early-access/graphql/
+* https://developer.github.com/early-access/graphql/explorer/[interactive GraphQL Explorer]
+
+
+Neo4j & GitHub
+
+* https://gist.github.com/ikwattro/071d36f135131e8e4442[Github Events Analysis with Neo4j by ikwattro]
+* https://neo4j.com/blog/keylines-graphing-github/[KeyLines: Graphing GitHub]
+* https://skillsmatter.com/meetups/8354-empowering-github-social-with-neo4j-and-mining-and-searching-text-with-graph-databases[Talk: Empowering Github Social with Neo4j and Mining and Searching text with Graph Databases]
+* http://graphaware.com/neo4j/nlp/2016/09/06/power-a-github-bot-for-issue-reviewers-with-graph-based-nlp.html[Blog: Power a Github Notification Bot for Issue Reviewers with Graph Based NLP by Christophe Willemsen]
+* http://blog.brian-underwood.codes/2015/02/22/making_master_data_management_fun_with_neo4j_-_part_2/[Blog Making Master Data Management Fun with Neo4j - Part 2 by Brian Underwood]
+* http://jexp.de/blog/2014/06/using-load-csv-to-import-git-history-into-neo4j/[Using LOAD CSV to import Git History into Neo4j]
+* 
+
+////
+https://developer.github.com/v3/repos/releases/#get-the-latest-release
+////
