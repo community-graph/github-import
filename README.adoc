@@ -90,10 +90,23 @@ image::https://github.com/community-graph/documentation/raw/master/community_gra
 
 Latest 100 repositories by stars.
 
+[source,cypher]
 ----
-MATCH (n:Repository) WITH n ORDER BY n.created desc LIMIT 100 
-RETURN n.title, n.url, n.created, n.favorites, n.description 
+MATCH (n:Repository) WITH n ORDER BY n.created desc LIMIT 100
+WITH n ORDER BY n.created DESC LIMIT 100
+RETURN n.title, n.url, n.created, n.favorites, substring(n.description,0,250) as desc
 ORDER BY n.favorites DESC
+----
+
+[source,cypher]
+----
+MATCH (n:Repository) 
+WITH n 
+ORDER BY apoc.date.parse(n.updated,'ms',"yyyy-MM-dd'T'HH:mm:ss'Z'") desc 
+LIMIT 100
+MATCH (n)<-[:CREATED]-(user) WHERE NOT user.name IN ["neo4j", "neo4j-contrib"]
+RETURN n.title, n.url, n.created, n.favorites, n.description, n.updated, user.name
+ORDER BY n.favorites + n.watchers desc
 ----
 
 === TODO
