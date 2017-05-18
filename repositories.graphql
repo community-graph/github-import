@@ -1,1 +1,59 @@
-{"query" :  "query {     search(query:"neo4j created:>2016-01-01",type:REPOSITORY,first:10) {      nodes {             ... on Repository {         id,         name,         description         createdAt,         updatedAt,         stargazers {totalCount},         watchers {totalCount},                 pullRequests{totalCount},         license,         releases{totalCount},         url,         languages(first:100) {edges {node{name}}}, mentionableUsers(first:100) {edges {node{name,login,company}}},         primaryLanguage{name},         homepageURL,         issues {totalCount},         owner {id,login}       }     }   }}" }
+{
+  search(query: "neo4j created:>2016-01-01", type: REPOSITORY, first: 10) {
+    nodes {
+      ... on Repository {
+        id
+        name
+        description
+        createdAt
+        updatedAt
+        stargazers {
+          totalCount
+        }
+        watchers {
+          totalCount
+        }
+        pullRequests {
+          totalCount
+        }
+        license
+        releases {
+          totalCount
+        }
+        url
+        mentionableUsers(first: 100) {
+          edges {
+            node {
+              name
+              login
+              company
+            }
+          }
+        }
+        labels(first: 100) {
+          nodes {
+            name
+          }
+        }
+        mentionableUsers(first: 100) {
+          nodes {
+            name
+            login
+            company
+          }
+        }
+        primaryLanguage {
+          name
+        }
+        homepageUrl
+        issues {
+          totalCount
+        }
+        owner {
+          id
+          login
+        }
+      }
+    }
+  }
+}
